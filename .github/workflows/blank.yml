@@ -20,12 +20,18 @@ jobs:
           # Properly URL-encode the JQL string using Python
           ENCODED_JQL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$JQL'''))")
           
+          echo "Encoded JQL: $ENCODED_JQL"  # Debugging step: print the encoded JQL string
+
           # Fetch issues from JIRA using the REST API with only the API token for authentication
-          curl -s \
+          response=$(curl -s \
             -H "Authorization: Basic $(echo -n ":${JIRA_API_TOKEN}" | base64)" \
             -X GET "${JIRA_BASE_URL}/rest/api/2/search?jql=$ENCODED_JQL&fields=key" \
-            -H "Accept: application/json" \
-            | jq -r '.issues[].key'
+            -H "Accept: application/json" )
+          
+          echo "Response from JIRA: $response"  # Debugging step: print the raw response from JIRA
+
+          # Check if the response contains issues and extract the keys
+          echo $response | jq -r '.issues[].key'
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}   # Secret containing JIRA API token
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}     # Secret containing your JIRA base URL
