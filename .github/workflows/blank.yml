@@ -1,0 +1,27 @@
+name: Fetch JIRA Issues
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-jira-issues:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Fetch JIRA issues
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}  # Your JIRA API Token
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}    # Your JIRA Base URL 
+        run: |
+          # JQL filter to search for issues
+          JQL='project = "Red Hat OpenShift AI Engineering" AND fixVersion in (RHOAI_2.16.0) AND (labels not in (RHOAI-releases, RHOAI-internal) OR labels is empty) AND component not in (Documentation, TestOps, DevOps, InfraOps)'
+
+          # Fetch issues from JIRA using the REST API with only the API token for authentication
+          curl -s \
+            -H "Authorization: Basic $(echo -n ":${JIRA_API_TOKEN}" | base64)" \
+            -X GET "${JIRA_BASE_URL}/rest/api/2/search?jql=$(echo $JQL | jq -s -R -r @uri)&fields=key" \
+            -H "Accept: application/json" \
+            | jq -r '.issues[].key'
