@@ -1,56 +1,31 @@
 name: Fetch JIRA Issues
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main  # Or any branch you want to trigger on
 
 jobs:
-  fetch-jira-issues:
+  fetch_issues:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Fetch JIRA issues
-        env:
-          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}  # Your JIRA API Token
-          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}    # Your JIRA Base URL (e.g., https://yourcompany.atlassian.net)
+      - name: Run JIRA query to fetch issue keys
         run: |
           # JQL filter to search for issues
           JQL="project = \"Red Hat OpenShift AI Engineering\" AND fixVersion in (RHOAI_2.16.0) AND (labels not in (RHOAI-releases, RHOAI-internal) OR labels is empty) AND component not in (Documentation, TestOps, DevOps, InfraOps)"
-
-          # Properly URL-encode the JQL string
-          ENCODED_JQL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$JQL'))")
-
-          # Debug: Check the encoded JQL string
-          echo "Encoded JQL: $ENCODED_JQL"
-
-          # Encode the JIRA API token for authorization (Basic Auth)
-          AUTH_HEADER=$(echo -n ":${JIRA_API_TOKEN}" | base64)
-
-          # Debug: Check the Authorization header (for debugging only)
-          echo "Authorization header: $AUTH_HEADER"
-
+          
+          # Properly URL-encode the JQL string using Python
+          ENCODED_JQL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$JQL'''))")
+          
           # Fetch issues from JIRA using the REST API with only the API token for authentication
-          RESPONSE=$(curl -s \
-            -H "Authorization: Basic $AUTH_HEADER" \
+          curl -s \
+            -H "Authorization: Basic $(echo -n ":${JIRA_API_TOKEN}" | base64)" \
             -X GET "${JIRA_BASE_URL}/rest/api/2/search?jql=$ENCODED_JQL&fields=key" \
-            -H "Accept: application/json")
-
-          # Debug: Check the raw response
-          echo "Response: $RESPONSE"
-
-          # If the response contains 401 Unauthorized, exit
-          if echo "$RESPONSE" | grep -q "401 Unauthorized"; then
-            echo "Authentication failed. Please check the API token and permissions."
-            exit 1
-          fi
-
-          # Check if the response contains valid JSON and extract issue keys
-          if echo "$RESPONSE" | jq -e . >/dev/null 2>&1; then
-            echo "Extracted issue keys:"
-            echo "$RESPONSE" | jq -r '.issues[].key'
-          else
-            echo "Failed to parse JSON response. Check the JIRA API response."
-            exit 1
-          fi
+            -H "Accept: application/json" \
+            | jq -r '.issues[].key'
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}   # Secret containing JIRA API token
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}     # Secret containing your JIRA base URL
