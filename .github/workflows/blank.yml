@@ -17,10 +17,10 @@ jobs:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}    # Your JIRA Base URL
         run: |
           # JQL filter to search for issues
-          JQL='project = "Red Hat OpenShift AI Engineering" AND fixVersion in (RHOAI_2.16.0) AND (labels not in (RHOAI-releases, RHOAI-internal) OR labels is empty) AND component not in (Documentation, TestOps, DevOps, InfraOps)'
+          JQL="project = \"Red Hat OpenShift AI Engineering\" AND fixVersion in (RHOAI_2.16.0) AND (labels not in (RHOAI-releases, RHOAI-internal) OR labels is empty) AND component not in (Documentation, TestOps, DevOps, InfraOps)"
 
           # Properly URL-encode the JQL string using Python
-          ENCODED_JQL=$(python -c "import urllib.parse; print(urllib.parse.quote('''$JQL'''))")
+          ENCODED_JQL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$JQL'''))")
 
           # Fetch issues from JIRA using the REST API with only the API token for authentication
           curl -s \
