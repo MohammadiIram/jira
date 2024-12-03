@@ -14,7 +14,7 @@ jobs:
       - name: Fetch JIRA issues
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}  # Your JIRA API Token
-          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}    # Your JIRA Base URL 
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}    # Your JIRA Base URL (e.g., https://yourcompany.atlassian.net)
         run: |
           # JQL filter to search for issues
           JQL="project = \"Red Hat OpenShift AI Engineering\" AND fixVersion in (RHOAI_2.16.0) AND (labels not in (RHOAI-releases, RHOAI-internal) OR labels is empty) AND component not in (Documentation, TestOps, DevOps, InfraOps)"
@@ -39,6 +39,12 @@ jobs:
 
           # Debug step: Print the raw response
           echo "Response: $RESPONSE"
+
+          # Check if the response is valid
+          if echo "$RESPONSE" | grep -q "401 Unauthorized"; then
+            echo "Authentication failed. Please check the API token."
+            exit 1
+          fi
 
           # Extract the issue keys from the response
           echo "$RESPONSE" | jq -r '.issues[].key'
