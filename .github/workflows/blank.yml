@@ -19,16 +19,16 @@ jobs:
           # JQL filter to search for issues
           JQL="project = \"Red Hat OpenShift AI Engineering\" AND fixVersion in (RHOAI_2.16.0) AND (labels not in (RHOAI-releases, RHOAI-internal) OR labels is empty) AND component not in (Documentation, TestOps, DevOps, InfraOps)"
 
-          # Properly URL-encode the JQL string using Python
+          # Properly URL-encode the JQL string
           ENCODED_JQL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$JQL'))")
 
-          # Debug step: Print the encoded JQL to see how it looks
+          # Debug: Check the encoded JQL string
           echo "Encoded JQL: $ENCODED_JQL"
 
           # Encode the JIRA API token for authorization (Basic Auth)
           AUTH_HEADER=$(echo -n ":${JIRA_API_TOKEN}" | base64)
 
-          # Debug step: Print the Authorization header (only for debugging purposes, avoid in production)
+          # Debug: Check the Authorization header (for debugging only)
           echo "Authorization header: $AUTH_HEADER"
 
           # Fetch issues from JIRA using the REST API with only the API token for authentication
@@ -37,14 +37,20 @@ jobs:
             -X GET "${JIRA_BASE_URL}/rest/api/2/search?jql=$ENCODED_JQL&fields=key" \
             -H "Accept: application/json")
 
-          # Debug step: Print the raw response
+          # Debug: Check the raw response
           echo "Response: $RESPONSE"
 
-          # Check if the response is valid
+          # If the response contains 401 Unauthorized, exit
           if echo "$RESPONSE" | grep -q "401 Unauthorized"; then
-            echo "Authentication failed. Please check the API token."
+            echo "Authentication failed. Please check the API token and permissions."
             exit 1
           fi
 
-          # Extract the issue keys from the response
-          echo "$RESPONSE" | jq -r '.issues[].key'
+          # Check if the response contains valid JSON and extract issue keys
+          if echo "$RESPONSE" | jq -e . >/dev/null 2>&1; then
+            echo "Extracted issue keys:"
+            echo "$RESPONSE" | jq -r '.issues[].key'
+          else
+            echo "Failed to parse JSON response. Check the JIRA API response."
+            exit 1
+          fi
