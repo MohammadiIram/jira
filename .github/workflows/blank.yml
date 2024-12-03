@@ -1,10 +1,10 @@
-name: Jira Labeler
+name: Fetch Jira Issue Keys
 
 on:
   workflow_dispatch:
 
 jobs:
-  label_issues:
+  fetch_issues:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -19,7 +19,7 @@ jobs:
         run: |
           pip install jira
 
-      - name: Run Jira Labeler Script
+      - name: Run Jira Fetcher Script
         env:
           JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}   # Optional if you want to specify a different Jira URL
@@ -28,4 +28,4 @@ jobs:
             (labels not in (RHOAI-releases, RHOAI-internal) OR labels is empty) AND 
             component not in (Documentation, TestOps, DevOps, InfraOps)
         run: |
-          python jira_labeler.py
+          python jira_fetcher.py
