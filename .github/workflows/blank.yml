@@ -24,7 +24,7 @@ jobs:
           JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}   # Optional if you want to specify a different Jira URL
           JQL_QUERY: |
-            project = "Red Hat OpenShift AI Engineering" AND fixVersion in (RHOAI_2.16.1) AND 
+            project = RHOAIENG AND fixVersion in (RHOAI_2.16.1) AND 
             (labels not in (RHOAI-releases, RHOAI-internal) OR labels is empty) AND 
             component not in (Documentation, TestOps, DevOps, InfraOps)
         run: |
